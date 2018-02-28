@@ -374,8 +374,7 @@
         <!-- Authenticator for PBAP account. -->
         <service
             android:process="@string/process"
-            android:name=".AuthenticationService"
-            android:exported="true"
+            android:name=".pbapclient.AuthenticationService"
             android:enabled="@bool/profile_supported_pbapclient">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />

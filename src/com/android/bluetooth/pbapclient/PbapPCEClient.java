@@ -391,10 +391,6 @@ public class PbapPCEClient  implements PbapHandler.PbapListener {
                 case EVENT_CLEANUP:
                     Thread.currentThread().interrupted();  //clear state of interrupt.
                     removeUncleanAccounts();
-                    mContext.getContentResolver().delete(CallLog.Calls.CONTENT_URI, null, null);
-                    if (DBG) {
-                        Log.d(TAG, "Call logs deleted.");
-                    }
                     break;
 
                 default:
@@ -413,6 +409,15 @@ public class PbapPCEClient  implements PbapHandler.PbapListener {
                 Log.w(TAG, "Deleting " + acc);
                 // The device ID is the name of the account.
                 removeAccount(acc);
+            }
+
+            try {
+                mContext.getContentResolver().delete(CallLog.Calls.CONTENT_URI, null, null);
+                if (DBG) {
+                    Log.d(TAG, "Call logs deleted.");
+                }
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "Call Logs could not be deleted, they may not exist yet.");
             }
         }
 
