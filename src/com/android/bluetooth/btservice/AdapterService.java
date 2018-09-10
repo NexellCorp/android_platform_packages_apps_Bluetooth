@@ -83,7 +83,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import android.os.ServiceManager;
-import com.android.internal.app.IBatteryStats;
+// import com.android.internal.app.IBatteryStats;
 
 public class AdapterService extends Service {
     private static final String TAG = "BluetoothAdapterService";
@@ -202,7 +202,7 @@ public class AdapterService extends Service {
 
     private AlarmManager mAlarmManager;
     private PendingIntent mPendingAlarm;
-    private IBatteryStats mBatteryStats;
+    // private IBatteryStats mBatteryStats;
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
     private String mWakeLockName;
@@ -518,8 +518,8 @@ public class AdapterService extends Service {
         getAdapterPropertyNative(AbstractionLayer.BT_PROPERTY_BDNAME);
         mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        mBatteryStats = IBatteryStats.Stub.asInterface(ServiceManager.getService(
-                BatteryStats.SERVICE_NAME));
+        // mBatteryStats = IBatteryStats.Stub.asInterface(ServiceManager.getService(
+        //         BatteryStats.SERVICE_NAME));
 
         mSdpManager = SdpManager.init(this);
         registerReceiver(mAlarmBroadcastReceiver, new IntentFilter(ACTION_ALARM_WAKEUP));
@@ -576,11 +576,11 @@ public class AdapterService extends Service {
 
         mJniCallbacks.init(mBondStateMachine,mRemoteDevices);
 
-        try {
-            mBatteryStats.noteResetBleScan();
-        } catch (RemoteException e) {
-            // Ignore.
-        }
+        // try {
+        //     mBatteryStats.noteResetBleScan();
+        // } catch (RemoteException e) {
+        //     // Ignore.
+        // }
 
         //Start Gatt service
         setGattProfileServiceState(supportedProfileServices,BluetoothAdapter.STATE_ON);
