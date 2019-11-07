@@ -48,6 +48,7 @@ import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.ParcelUuid;
+import android.os.SystemProperties;
 import android.util.Log;
 
 import com.android.bluetooth.Utils;
@@ -68,6 +69,10 @@ final class A2dpSinkStateMachine extends StateMachine {
 
     static final int CONNECT = 1;
     static final int DISCONNECT = 2;
+
+    static final String AAP_SESSION_STATE_CONNECTED_PROP = "aap.session.state.connected";
+    static final String AAP_SESSION_CONNECTED_BT_MAC = "aap.session.connected.bt.mac";
+
     private static final int STACK_EVENT = 101;
     private static final int CONNECT_TIMEOUT = 201;
     public static final int EVENT_AVRCP_CT_PLAY = 301;
@@ -244,12 +249,27 @@ final class A2dpSinkStateMachine extends StateMachine {
 
         // in Disconnected state
         private void processConnectionEvent(int state, BluetoothDevice device) {
+            boolean aap_connected = (Integer.parseInt(SystemProperties.get(AAP_SESSION_STATE_CONNECTED_PROP, "0")) > 0 ? true : false);
+            String aap_bt_macaddr = SystemProperties.get(AAP_SESSION_CONNECTED_BT_MAC, "Nothing");
+            logi("AAP session info : connected = " + aap_connected + ", bt_macaddr = " + aap_bt_macaddr);
+
             switch (state) {
             case CONNECTION_STATE_DISCONNECTED:
                 logw("Ignore HF DISCONNECTED event, device: " + device);
                 break;
             case CONNECTION_STATE_CONNECTING:
                 if (okToConnect(device)){
+                    if (aap_connected && aap_bt_macaddr.compareTo(device.getAddress()) == 0) {
+                        logi("Incoming A2DP rejected");
+                        disconnectA2dpNative(getByteAddress(device));
+                        // the other profile connection should be initiated
+                        AdapterService adapterService = AdapterService.getAdapterService();
+                        if (adapterService != null) {
+                            adapterService.connectOtherProfile(device,
+                                                               AdapterService.PROFILE_CONN_REJECTED);
+                        }
+                        break;
+                    }
                     logi("Incoming A2DP accepted");
                     broadcastConnectionState(device, BluetoothProfile.STATE_CONNECTING,
                                              BluetoothProfile.STATE_DISCONNECTED);
@@ -272,6 +292,17 @@ final class A2dpSinkStateMachine extends StateMachine {
             case CONNECTION_STATE_CONNECTED:
                 logw("A2DP Connected from Disconnected state");
                 if (okToConnect(device)){
+                    if (aap_connected && aap_bt_macaddr.compareTo(device.getAddress()) == 0) {
+                        logi("Incoming A2DP rejected");
+                        disconnectA2dpNative(getByteAddress(device));
+                        // the other profile connection should be initiated
+                        AdapterService adapterService = AdapterService.getAdapterService();
+                        if (adapterService != null) {
+                            adapterService.connectOtherProfile(device,
+                                                               AdapterService.PROFILE_CONN_REJECTED);
+                        }
+                        break;
+                    }
                     logi("Incoming A2DP accepted");
                     broadcastConnectionState(device, BluetoothProfile.STATE_CONNECTED,
                                              BluetoothProfile.STATE_DISCONNECTED);
@@ -292,7 +323,7 @@ final class A2dpSinkStateMachine extends StateMachine {
                 }
                 break;
             case CONNECTION_STATE_DISCONNECTING:
-                logw("Ignore HF DISCONNECTING event, device: " + device);
+                logw("Ignore A2DP DISCONNECTING event, device: " + device);
                 break;
             default:
                 loge("Incorrect state: " + state);
@@ -359,6 +390,10 @@ final class A2dpSinkStateMachine extends StateMachine {
         // in Pending state
         private void processConnectionEvent(int state, BluetoothDevice device) {
             log("processConnectionEvent state " + state);
+            boolean aap_connected = (Integer.parseInt(SystemProperties.get(AAP_SESSION_STATE_CONNECTED_PROP, "0")) > 0 ? true : false);
+            String aap_bt_macaddr = SystemProperties.get(AAP_SESSION_CONNECTED_BT_MAC, "Nothing");
+            logi("AAP session info : connected = " + aap_connected + ", bt_macaddr = " + aap_bt_macaddr);
+
             switch (state) {
                 case CONNECTION_STATE_DISCONNECTED:
                     mAudioConfigs.remove(device);
@@ -422,6 +457,17 @@ final class A2dpSinkStateMachine extends StateMachine {
                     }
                 } else if (mTargetDevice != null && mTargetDevice.equals(device)) {
                     loge("target device is not null");
+                    if (aap_connected && aap_bt_macaddr.compareTo(device.getAddress()) == 0) {
+                        logi("Outgoing A2DP rejected");
+                        disconnectA2dpNative(getByteAddress(device));
+                        // the other profile connection should be initiated
+                        AdapterService adapterService = AdapterService.getAdapterService();
+                        if (adapterService != null) {
+                            adapterService.connectOtherProfile(device,
+                                                               AdapterService.PROFILE_CONN_REJECTED);
+                        }
+                        break;
+                    }
                     broadcastConnectionState(mTargetDevice, BluetoothProfile.STATE_CONNECTED,
                                              BluetoothProfile.STATE_CONNECTING);
                     synchronized (A2dpSinkStateMachine.this) {
